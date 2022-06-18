@@ -160,6 +160,241 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/./images/head_portrait.png">
+      <meta itemprop="name" content="lllong33">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Simple & relaxed">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/" class="post-title-link" itemprop="url">Flink Time和Window</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:36" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <p>Time和Window 特性，案例</p>
+<h3 id="6-1-时间语义"><a href="#6-1-时间语义" class="headerlink" title="6.1 时间语义"></a>6.1 时间语义</h3><ul>
+<li>事件时间 EventTimeWindow 要求数据携带，常用；</li>
+<li>提取时间IngestingTimeWindow，以source 的 systemTime为准，一种中和方案；</li>
+<li>处理时间ProcessingTimeWindows，以operator 的 systemTime 为准；</li>
+</ul>
+<h3 id="6-2-水位线Watermark"><a href="#6-2-水位线Watermark" class="headerlink" title="6.2 水位线Watermark"></a>6.2 水位线Watermark</h3><p>2.1 事件时间和窗口：解释为什么使用事件时间，而不是处理时间（受硬件影响，随机性太大），对于乱序数据，无法保证数据正确性，事件时间靠着新到数据的时间戳推动时间进展，可以使无论什么时候到来的数据都正常统计。（数据幂等性也是一种原因）</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/./images/head_portrait.png">
+      <meta itemprop="name" content="lllong33">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Simple & relaxed">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/" class="post-title-link" itemprop="url">Flink 运行架构</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:22" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="四、Flink运行架构"><a href="#四、Flink运行架构" class="headerlink" title="四、Flink运行架构"></a>四、Flink运行架构</h2><h3 id="4-1-系统架构"><a href="#4-1-系统架构" class="headerlink" title="4.1 系统架构"></a>4.1 系统架构</h3><p>分布式系统架构的起源：单节点，通过增加CPU、内存，提吞吐量，引出 SMP（Symmetrical Multi-Processing，对称多处理）架构。存在资源竞争和机器成本问题 &#x3D;》提出”不共享任何东西”（share-nothing）的分布式架构。以GP为代表的MPP（Massively Parallel Processing 大规模并行处理架构）；到 Hadoop、Spark为代表的批处理架构，再到 Storm、Flink 为代表的流处理架构。</p>
+<p>分布式系统经典问题：集群资源的分配和管理、进程协调调度、持久化和高可用的数据存储，以及故障恢复。</p>
+<p>执行流程：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/./images/head_portrait.png">
+      <meta itemprop="name" content="lllong33">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Simple & relaxed">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/2022/06/18/Flink%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">Flink 容错机制</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:05" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="Flink-容错机制"><a href="#Flink-容错机制" class="headerlink" title="Flink 容错机制"></a>Flink 容错机制</h2><h3 id="1、检查点"><a href="#1、检查点" class="headerlink" title="1、检查点"></a>1、检查点</h3><p>解决流处理应用的状态放在堆内存，重启后如何保留；</p>
+<p>一致性检查点，故障恢复之后要与故障前对比是否一致</p>
+<p>1.1检查点保存策略：</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/06/18/Flink%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6/#more" rel="contents">
+                Read more &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
     <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Hive%E7%BB%83%E4%B9%A0%E9%A2%98/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -303,241 +538,6 @@
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/2022/06/18/Spark%E7%BB%83%E4%B9%A0%E9%A2%98/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/./images/head_portrait.png">
-      <meta itemprop="name" content="lllong33">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Simple & relaxed">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/06/18/Flink%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6/" class="post-title-link" itemprop="url">Flink 容错机制</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-              
-
-              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:05" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="Flink-容错机制"><a href="#Flink-容错机制" class="headerlink" title="Flink 容错机制"></a>Flink 容错机制</h2><h3 id="1、检查点"><a href="#1、检查点" class="headerlink" title="1、检查点"></a>1、检查点</h3><p>解决流处理应用的状态放在堆内存，重启后如何保留；</p>
-<p>一致性检查点，故障恢复之后要与故障前对比是否一致</p>
-<p>1.1检查点保存策略：</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/06/18/Flink%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/./images/head_portrait.png">
-      <meta itemprop="name" content="lllong33">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Simple & relaxed">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/" class="post-title-link" itemprop="url">Flink Time和Window</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-              
-
-              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:36" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <p>Time和Window 特性，案例</p>
-<h3 id="6-1-时间语义"><a href="#6-1-时间语义" class="headerlink" title="6.1 时间语义"></a>6.1 时间语义</h3><ul>
-<li>事件时间 EventTimeWindow 要求数据携带，常用；</li>
-<li>提取时间IngestingTimeWindow，以source 的 systemTime为准，一种中和方案；</li>
-<li>处理时间ProcessingTimeWindows，以operator 的 systemTime 为准；</li>
-</ul>
-<h3 id="6-2-水位线Watermark"><a href="#6-2-水位线Watermark" class="headerlink" title="6.2 水位线Watermark"></a>6.2 水位线Watermark</h3><p>2.1 事件时间和窗口：解释为什么使用事件时间，而不是处理时间（受硬件影响，随机性太大），对于乱序数据，无法保证数据正确性，事件时间靠着新到数据的时间戳推动时间进展，可以使无论什么时候到来的数据都正常统计。（数据幂等性也是一种原因）</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/#more" rel="contents">
-                Read more &raquo;
-              </a>
-            </div>
-          <!--/noindex-->
-        
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/./images/head_portrait.png">
-      <meta itemprop="name" content="lllong33">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="Simple & relaxed">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/" class="post-title-link" itemprop="url">Flink 运行架构</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-              
-
-              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:22" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
-            </span>
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-folder"></i>
-              </span>
-              <span class="post-meta-item-text">In</span>
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
-                </span>
-            </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="四、Flink运行架构"><a href="#四、Flink运行架构" class="headerlink" title="四、Flink运行架构"></a>四、Flink运行架构</h2><h3 id="4-1-系统架构"><a href="#4-1-系统架构" class="headerlink" title="4.1 系统架构"></a>4.1 系统架构</h3><p>分布式系统架构的起源：单节点，通过增加CPU、内存，提吞吐量，引出 SMP（Symmetrical Multi-Processing，对称多处理）架构。存在资源竞争和机器成本问题 &#x3D;》提出”不共享任何东西”（share-nothing）的分布式架构。以GP为代表的MPP（Massively Parallel Processing 大规模并行处理架构）；到 Hadoop、Spark为代表的批处理架构，再到 Storm、Flink 为代表的流处理架构。</p>
-<p>分布式系统经典问题：集群资源的分配和管理、进程协调调度、持久化和高可用的数据存储，以及故障恢复。</p>
-<p>执行流程：</p>
-          <!--noindex-->
-            <div class="post-button">
-              <a class="btn" href="/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/#more" rel="contents">
                 Read more &raquo;
               </a>
             </div>

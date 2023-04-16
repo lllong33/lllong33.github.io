@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Time和Window 特性，案例 6.1 时间语义 事件时间 EventTimeWindow 要求数据携带，常用； 提取时间IngestingTimeWindow，以source 的 systemTime为准，一种中和方案； 处理时间ProcessingTimeWindows，以operator 的 systemTime 为准；  6.2 水位线Watermark2.1 事件时间和窗口：解释为什">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink Time和Window">
+<meta property="og:url" content="http://example.com/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/index.html">
+<meta property="og:site_name" content="Simple &amp; relaxed">
+<meta property="og:description" content="Time和Window 特性，案例 6.1 时间语义 事件时间 EventTimeWindow 要求数据携带，常用； 提取时间IngestingTimeWindow，以source 的 systemTime为准，一种中和方案； 处理时间ProcessingTimeWindows，以operator 的 systemTime 为准；  6.2 水位线Watermark2.1 事件时间和窗口：解释为什">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/image-20220614154705786.png">
+<meta property="og:image" content="http://example.com/images/image-20220614164803910.png">
+<meta property="article:published_time" content="2022-06-18T09:50:31.000Z">
+<meta property="article:modified_time" content="2022-06-18T10:51:36.685Z">
+<meta property="article:author" content="lllong33">
+<meta property="article:tag" content="Flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/image-20220614154705786.png">
+
+<link rel="canonical" href="http://example.com/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>Flink Time和Window | Simple & relaxed</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Simple & relaxed</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="tags fa-fw"></i>Tags<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="th fa-fw"></i>Categories<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="archive fa-fw"></i>Archives<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="user fa-fw"></i>About</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/./images/head_portrait.png">
+      <meta itemprop="name" content="lllong33">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Simple & relaxed">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Flink Time和Window
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:36" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>Time和Window 特性，案例</p>
+<h3 id="6-1-时间语义"><a href="#6-1-时间语义" class="headerlink" title="6.1 时间语义"></a>6.1 时间语义</h3><ul>
+<li>事件时间 EventTimeWindow 要求数据携带，常用；</li>
+<li>提取时间IngestingTimeWindow，以source 的 systemTime为准，一种中和方案；</li>
+<li>处理时间ProcessingTimeWindows，以operator 的 systemTime 为准；</li>
+</ul>
+<h3 id="6-2-水位线Watermark"><a href="#6-2-水位线Watermark" class="headerlink" title="6.2 水位线Watermark"></a>6.2 水位线Watermark</h3><p>2.1 事件时间和窗口：解释为什么使用事件时间，而不是处理时间（受硬件影响，随机性太大），对于乱序数据，无法保证数据正确性，事件时间靠着新到数据的时间戳推动时间进展，可以使无论什么时候到来的数据都正常统计。（数据幂等性也是一种原因）</p>
+<p>2.2 什么是水位线：解决时钟传递因为窗口聚合之类的运算而停滞；衡量EventTime进展的标记。特殊的数据记录，插入到数据流中的一个标记点。</p>
+<p>有序流中水位线：大量重复数据会使水位线重复效率底，引出周期时间。</p>
+<p>乱序流中水位线：引出迟到数据（late data），就要设置水位线延迟时间。</p>
+<p>水位线特性：</p>
+<ul>
+<li>插入数据流中特殊数据也是一个标记</li>
+<li>表示时间戳，即时间的进展，只能单调递增</li>
+<li>可以设置延迟时间，处理乱序数据</li>
+<li>表示流中事件到达时间戳t，之后流中不会出现t’ &lt;&#x3D; t 的数据</li>
+</ul>
+<p>2.3 如何生成水位线</p>
+<ul>
+<li><p>原则：通过业务常见迟到时间判断；配置监控事件流，通过正态分布中选择对应置信区间来设置；</p>
+</li>
+<li><p>水位线生成策略 (Watermark Strategies)：时间戳分配器 TimestampAssigner 和 水位线生成器 WatermarkGenerator</p>
+</li>
+<li><p>Flink 内置水位线生成器：WatermarkStrategy.forMonotonousTimestamps() 和 WatermarkStrategy.forBoundedOutOfOrderness()</p>
+</li>
+<li><p>自定义水位线策略：周期性（Periodic Generator），断点式（Punctuated）</p>
+<p>案例：CustomWaterMarkTest，EmitWatermarkInSourceFunction；todo qst 还有很多未理解，主要是代码执行的流程，中间实现的功能理解。</p>
+</li>
+<li><p>水位线&#x3D;观察到的最大事件时间 – 最大延迟时间– 1 毫秒</p>
+</li>
+</ul>
+<p>2.4 水位线的传递：根据木桶原理，选择最小水位线更新。</p>
+<h3 id="6-3-窗口"><a href="#6-3-窗口" class="headerlink" title="6.3 窗口"></a>6.3 窗口</h3><p>背景：频繁更新会带来系统负担</p>
+<p>3.1 窗口的概念：将无界流转化为有界数据集的聚合，就是所谓的窗口 Window。</p>
+<ul>
+<li>一种左闭右开区间；窗口理解成桶区分延迟数据；Flink窗口是动态窗口的；</li>
+</ul>
+<p>3.2 窗口的分类</p>
+<ul>
+<li>按照驱动类型分类：时间窗口和计数窗口</li>
+<li>按照窗口分配数据的规则分类：滚动窗口（Tumbling Window）、滑动窗口（Sliding Window）、会话窗口（Session Window）和全局窗口（Global Window）</li>
+<li>TW场景：BI指标；SW场景：最近一段时间内指标且输出频率高，例如股票24小时涨跌幅，基于一段时间内行为检测的异常报警；</li>
+</ul>
+<p>3.3 窗口API概览</p>
+<ul>
+<li>按键分区（Keyed）和非按键分区（Non-Keyed）：主要确定是否并行执行。</li>
+<li>窗口操作：窗口分配器（Window Assigners） 和窗口函数（Window Functions）</li>
+</ul>
+<p>3.4 窗口分配器（Window Assigners）</p>
+<ul>
+<li><pre><code class="java">// 1.1、处理时间
+// 滚动窗口
+stream.keyBy(...)
+    .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
+    .aggregate(...);
+    
+// 滑动窗口
+stream.keyBy(...)
+    .window(SlidingProcessingTimeWindows.of(Time.seconds(10), Time.seconds(5)))
+    .aggregate(...);
+
+// 会话窗口
+stream.keyBy(...)
+    .window(ProcessingTimeSessionWindows.withGap(Time.seconds(10)))
+    .aggregate(...);
+// 动态会话窗口 ProcessingTimeSessionWindows.withDynamicGap
+
+// 1.2、事件时间TumblingProcessingTimeWindows 换成 TumblingEventTimeWindows
+
+// 2.计数窗口
+    stream.keyBy(...) // 滚动
+        .countWindow(10);
+    
+    stream.keyBy(...) // 滑动
+        .countWindow(10, 3)
+        
+// 3.全局窗口
+    stream.keyBy(...)
+        .window(GlobalWindows.create());
+</code></pre>
+</li>
+<li><p>时间窗口、计数窗口、全局窗口</p>
+</li>
+</ul>
+<p>3.5 窗口函数（Window Functions）</p>
+<ul>
+<li><p>流之间转换</p>
+<p><img src="/../../images/image-20220614154705786.png" alt="image-20220614154705786"></p>
+</li>
+<li><p>增量聚合函数：ReduceFunction（案例：WindowReduceTest）、AggregateFunction（案例：WindowAggregateTest）</p>
+</li>
+<li><p>全窗口函数：WindowFunction、ProcessWindowFunction</p>
+</li>
+<li><p>AggregateFunction + ProcessWindowFunction 结合使用</p>
+</li>
+<li><p>案例：UvCountByWindowExample、UrlViewCountExample</p>
+</li>
+</ul>
+<p>3.6 测试水位线和窗口的使用；案例：WatermarkTestV2</p>
+<p>3.7 其他API</p>
+<ul>
+<li>触发器 （Trigger）</li>
+<li>移除器（Evictor）</li>
+<li>允许延迟（Allowed Lateness）</li>
+<li>将迟到数据放入侧输出流</li>
+<li>窗口API总结<img src="/../../images/image-20220614164803910.png" alt="image-20220614164803910"></li>
+</ul>
+<p>3.8 窗口的生命周期</p>
+<ul>
+<li>窗口的创建，窗口计算的触发，窗口的销毁，</li>
+</ul>
+<p>Flink 窗口的应用和实现，扩展：<a target="_blank" rel="noopener" href="https://www.bilibili.com/video/BV1n54y1976u/">https://www.bilibili.com/video/BV1n54y1976u/</a></p>
+<p>对应微信文章：<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/xZTGeFaaVW4VDDVgp3jwqg">https://mp.weixin.qq.com/s/xZTGeFaaVW4VDDVgp3jwqg</a></p>
+<h3 id="6-4-延迟数据处理方式"><a href="#6-4-延迟数据处理方式" class="headerlink" title="6.4 延迟数据处理方式"></a>6.4 延迟数据处理方式</h3><p>4.1 设置水位线延迟时间</p>
+<p>4.2 允许窗口处理迟到数据</p>
+<p>4.3 将迟到数据（窗口关闭后的数据）放入窗口测输出流</p>
+<p>案例：ProcessLateDateExample</p>
+<p>待阅读，Time和Windows详解，扩展：<a target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s?__biz=Mzg2MzU2MDYzOA==&amp;mid=2247483905&amp;idx=1&amp;sn=11434f3788a8a78418d21bacddcedbf7&amp;chksm=ce77f4d0f9007dc6c3701f4f0306185cf5bfbec44b6f7944d570ccd0df07dd6f12902769ef31&amp;token=1679639512&amp;lang=zh_CN">https://mp.weixin.qq.com/s?__biz=Mzg2MzU2MDYzOA==&amp;mid=2247483905&amp;idx=1&amp;sn=11434f3788a8a78418d21bacddcedbf7&amp;chksm=ce77f4d0f9007dc6c3701f4f0306185cf5bfbec44b6f7944d570ccd0df07dd6f12902769ef31&amp;token=1679639512&amp;lang=zh_CN</a></p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>lllong33
+  </li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    <a href="http://example.com/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/" title="Flink Time和Window">http://example.com/2022/06/18/Flink 时间和Window/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Flink/" rel="tag"># Flink</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/" rel="prev" title="Flink 运行架构">
+      <i class="fa fa-chevron-left"></i> Flink 运行架构
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/06/18/AboutMe/" rel="next" title="AboutMe">
+      AboutMe <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#6-1-%E6%97%B6%E9%97%B4%E8%AF%AD%E4%B9%89"><span class="nav-number">1.</span> <span class="nav-text">6.1 时间语义</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-2-%E6%B0%B4%E4%BD%8D%E7%BA%BFWatermark"><span class="nav-number">2.</span> <span class="nav-text">6.2 水位线Watermark</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-3-%E7%AA%97%E5%8F%A3"><span class="nav-number">3.</span> <span class="nav-text">6.3 窗口</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#6-4-%E5%BB%B6%E8%BF%9F%E6%95%B0%E6%8D%AE%E5%A4%84%E7%90%86%E6%96%B9%E5%BC%8F"><span class="nav-number">4.</span> <span class="nav-text">6.4 延迟数据处理方式</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="lllong33"
+      src="/./images/head_portrait.png">
+  <p class="site-author-name" itemprop="name">lllong33</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/lllong33" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lllong33" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:704669594@qq.com" title="E-Mail → mailto:704669594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://blog.csdn.net/lllong33" title="CSDN → https:&#x2F;&#x2F;blog.csdn.net&#x2F;lllong33" rel="noopener" target="_blank"><i class="heartbeat fa-fw"></i></a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">©2019 - 2022 by lllong33</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

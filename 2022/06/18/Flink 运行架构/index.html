@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="四、Flink运行架构4.1 系统架构分布式系统架构的起源：单节点，通过增加CPU、内存，提吞吐量，引出 SMP（Symmetrical Multi-Processing，对称多处理）架构。存在资源竞争和机器成本问题 &#x3D;》提出”不共享任何东西”（share-nothing）的分布式架构。以GP为代表的MPP（Massively Parallel Processing 大规模并行处理架构）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Flink 运行架构">
+<meta property="og:url" content="http://example.com/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/index.html">
+<meta property="og:site_name" content="Simple &amp; relaxed">
+<meta property="og:description" content="四、Flink运行架构4.1 系统架构分布式系统架构的起源：单节点，通过增加CPU、内存，提吞吐量，引出 SMP（Symmetrical Multi-Processing，对称多处理）架构。存在资源竞争和机器成本问题 &#x3D;》提出”不共享任何东西”（share-nothing）的分布式架构。以GP为代表的MPP（Massively Parallel Processing 大规模并行处理架构）">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/image-20220317141637101.png">
+<meta property="og:image" content="http://example.com/images/image-20220616173717127.png">
+<meta property="og:image" content="http://example.com/images/image-20220317141812391.png">
+<meta property="og:image" content="http://example.com/images/%E5%B0%9A%E7%A1%85%E8%B0%B7%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E4%B9%8Bflink%EF%BC%88java%EF%BC%89.bmp">
+<meta property="article:published_time" content="2022-06-18T09:50:31.000Z">
+<meta property="article:modified_time" content="2022-06-18T10:51:22.489Z">
+<meta property="article:author" content="lllong33">
+<meta property="article:tag" content="Flink">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/image-20220317141637101.png">
+
+<link rel="canonical" href="http://example.com/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>Flink 运行架构 | Simple & relaxed</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">Simple & relaxed</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="tags fa-fw"></i>Tags<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="th fa-fw"></i>Categories<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="archive fa-fw"></i>Archives<span class="badge">6</span></a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="user fa-fw"></i>About</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/./images/head_portrait.png">
+      <meta itemprop="name" content="lllong33">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Simple & relaxed">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Flink 运行架构
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-06-18 17:50:31 / Modified: 18:51:22" itemprop="dateCreated datePublished" datetime="2022-06-18T17:50:31+08:00">2022-06-18</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Flink/" itemprop="url" rel="index"><span itemprop="name">Flink</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="四、Flink运行架构"><a href="#四、Flink运行架构" class="headerlink" title="四、Flink运行架构"></a>四、Flink运行架构</h2><h3 id="4-1-系统架构"><a href="#4-1-系统架构" class="headerlink" title="4.1 系统架构"></a>4.1 系统架构</h3><p>分布式系统架构的起源：单节点，通过增加CPU、内存，提吞吐量，引出 SMP（Symmetrical Multi-Processing，对称多处理）架构。存在资源竞争和机器成本问题 &#x3D;》提出”不共享任何东西”（share-nothing）的分布式架构。以GP为代表的MPP（Massively Parallel Processing 大规模并行处理架构）；到 Hadoop、Spark为代表的批处理架构，再到 Storm、Flink 为代表的流处理架构。</p>
+<p>分布式系统经典问题：集群资源的分配和管理、进程协调调度、持久化和高可用的数据存储，以及故障恢复。</p>
+<p>执行流程：</p>
+<ol>
+<li>客户端调用程序的 main 方法，将代码转换成 Dataflow Graph，并最终生成作业图 JobGraph，一并发送给 JobManager。提交之后，客户端可以选择是否断开与 JM 的连接。</li>
+<li>JM 接下来会将 JobGraph 转换成可执行的 ExecutionGraph ，并分发给可用的 TaskManager。</li>
+</ol>
+<p>Flink系统组件：</p>
+<ul>
+<li><p>作业管理器JobManager</p>
+<ul>
+<li><p>组件：JobMaster、ResourceManager、Dispatcher</p>
+</li>
+<li><p>针对不同模式，RM有不同实现。</p>
+</li>
+</ul>
+</li>
+<li><p>任务管理器TaskManager</p>
+<p>插槽slot</p>
+</li>
+</ul>
+<h3 id="4-2-任务提交流程"><a href="#4-2-任务提交流程" class="headerlink" title="4.2 任务提交流程"></a>4.2 任务提交流程</h3><p><img src="/../../images/image-20220317141637101.png" alt="image-20220317141637101"></p>
+<p>Yarn 集群下</p>
+<ul>
+<li>Standalone 与 Per-Job 区别在于，作业提交给Dispacher还是Yarn RM</li>
+<li>Application mode 与 Per-Job 相似，只是Yarn RM接收到的是整个应用，可能包含多个作业。</li>
+<li>具体流程如下（Per-Job）：<ol>
+<li>客户端将作业提交给 YarnRM，同时会将 Flink 的 Jar 包和配置上传到 HDFS，以便后续启动 Flink 相关组件容器。</li>
+<li>YarnRM分配Container（NM），启动 JobManager，并将作业提交给 JobMaster。（JM是通过ApplicationMaster在NodeManager容器中生成）</li>
+<li>JM 向 FlinkRM 请求 slots</li>
+<li>FlinkRM 向 YarnRM 请求 Container 资源，启动新的 TaskManager 容器。</li>
+<li>TM 启动后向FlinkRM注册可用slots，FlinkRM通知TM为新作业提供slots，TM会连接到对应JobMaster并提供slots</li>
+<li>JobMaster将需要执行的任务分发给 TM 执行任务。</li>
+</ol>
+</li>
+</ul>
+<p><img src="/../../images/image-20220616173717127.png" alt="image-20220616173717127"></p>
+<p>扩展参考：YARN上提交流程</p>
+<p><img src="/../../images/image-20220317141812391.png" alt="image-20220317141812391"></p>
+<h3 id="4-3一些概念："><a href="#4-3一些概念：" class="headerlink" title="4.3一些概念："></a>4.3一些概念：</h3><p>Dataflow Graph：一连串的处理操作，可以在Web UI界面查看。返回类型为 SingleOutputStreamOperator 说明为一个算子操作，而KeyBy之后返回类型是 KeyedStrem 是一个中间转换操作。</p>
+<p>并行度 Parallelism：一个特定算子的子任务（subtask）的个数被称之为其并行度（parallelism）。</p>
+<ul>
+<li>parallelism优先级：代码 -&gt; 执行环境全局设置 -&gt; 提交时 -p 参数 -&gt; 配置文件</li>
+<li>实践中仅在代码中针对算子设置并行度，不设置全局并行度，方便我们提交作业时进行动态扩容。</li>
+</ul>
+<p>算子链 Operator Chain：</p>
+<ul>
+<li>OneToOne，Redistributing 两种算子种类，Flink对于并行度相同的相邻算子会进行合并操作。</li>
+</ul>
+<p>JobGraph和ExecutionGraph：下图为四层调度图演变过程</p>
+<ul>
+<li><p>JobGraph会进行算子链聚合等优化。</p>
+</li>
+<li><p>ExecutionGraph 为调度层最核心的数据结构。</p>
+</li>
+<li><p>PhysicalGraph 确定数据存放位置、收发方式等。在TaskManager上形成的图</p>
+</li>
+</ul>
+<p><img src="/../../images/%E5%B0%9A%E7%A1%85%E8%B0%B7%E5%A4%A7%E6%95%B0%E6%8D%AE%E6%8A%80%E6%9C%AF%E4%B9%8Bflink%EF%BC%88java%EF%BC%89.bmp" alt="image-20220616182848343"></p>
+<p>Tasks和Task Slots</p>
+<ul>
+<li>任务槽 task slots：控制任务并发量，限定TM每个任务所占用资源，</li>
+<li>Flink 是允许子任务共享slot 。解决source、sink所需资源短暂，但window算子操作之类的资源密集型（intensive）任务耗时久，导致的资源空闲。解决TM宕机时还有完整作业通道在执行。</li>
+<li>实际中只看最大并行度来配置。</li>
+<li>slots和parallelism关系：并行度如果小于等于集群中可用slot 的总数，程序是可以正常执行的，如果不够就要等待RM分配更多资源。</li>
+</ul>
+<h3 id="扩展："><a href="#扩展：" class="headerlink" title="扩展："></a>扩展：</h3><p>Flink 源码层分析提交流程：<a target="_blank" rel="noopener" href="https://blog.csdn.net/zhanglong_4444/article/details/115533659">https://blog.csdn.net/zhanglong_4444/article/details/115533659</a></p>
+<p>《Flink内核原理与实现》冯飞</p>
+<p>一、Program 到 StreamGraph </p>
+<ul>
+<li>从StreamExecutionEnvironment.execute 开始执行程序，将 xxxtransformation 添加到 transformations。</li>
+<li>通过调用 StreamGraphGenerator 的 generateInternal方法，遍历构建 StreamNode 和 StreamEdge</li>
+<li>通过 StreamEdge 连接 StreamNode</li>
+</ul>
+<p>介绍 StreamGraph 中 Transformation 数据结构：<a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_41197407/article/details/122145040">https://blog.csdn.net/weixin_41197407/article/details/122145040</a></p>
+<p>算子操作转化为 transformation 对象进行存储</p>
+<p>DAG：如果一个有向图无法从任意顶点出发经过若干条边回到该点，则这个图就是有向无环图</p>
+<p>二、三、四步骤看起来还有点懵。</p>
+<p>Flink 四层转化流程宏观上大概了解，具体为什么这样设计和实现，以及实现的代码阅读起来都是有苦难，暂时先从APP上入手。</p>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>Post author:  </strong>lllong33
+  </li>
+  <li class="post-copyright-link">
+    <strong>Post link: </strong>
+    <a href="http://example.com/2022/06/18/Flink%20%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84/" title="Flink 运行架构">http://example.com/2022/06/18/Flink 运行架构/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>Copyright Notice:  </strong>All articles in this blog are licensed under <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> unless stating additionally.
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Flink/" rel="tag"># Flink</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/06/18/Flink%E5%AE%B9%E9%94%99%E6%9C%BA%E5%88%B6/" rel="prev" title="Flink 容错机制">
+      <i class="fa fa-chevron-left"></i> Flink 容错机制
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/06/18/Flink%20%E6%97%B6%E9%97%B4%E5%92%8CWindow/" rel="next" title="Flink Time和Window">
+      Flink Time和Window <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9B%9B%E3%80%81Flink%E8%BF%90%E8%A1%8C%E6%9E%B6%E6%9E%84"><span class="nav-number">1.</span> <span class="nav-text">四、Flink运行架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#4-1-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84"><span class="nav-number">1.1.</span> <span class="nav-text">4.1 系统架构</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-2-%E4%BB%BB%E5%8A%A1%E6%8F%90%E4%BA%A4%E6%B5%81%E7%A8%8B"><span class="nav-number">1.2.</span> <span class="nav-text">4.2 任务提交流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#4-3%E4%B8%80%E4%BA%9B%E6%A6%82%E5%BF%B5%EF%BC%9A"><span class="nav-number">1.3.</span> <span class="nav-text">4.3一些概念：</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%89%A9%E5%B1%95%EF%BC%9A"><span class="nav-number">1.4.</span> <span class="nav-text">扩展：</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="lllong33"
+      src="/./images/head_portrait.png">
+  <p class="site-author-name" itemprop="name">lllong33</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span>
+      </div>
+      <div class="site-state-item site-state-tags">
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">tags</span>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/lllong33" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lllong33" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:704669594@qq.com" title="E-Mail → mailto:704669594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i></a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://blog.csdn.net/lllong33" title="CSDN → https:&#x2F;&#x2F;blog.csdn.net&#x2F;lllong33" rel="noopener" target="_blank"><i class="heartbeat fa-fw"></i></a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">©2019 - 2022 by lllong33</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Gemini</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
